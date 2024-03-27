@@ -42,14 +42,14 @@ rule download_transcriptomes:
         set +e
         esearch -db nuccore -query {wildcards.tsa_accession} | \
             efetch -format fasta > {output}
-        if [ ! -s {output.fasta} ]; then
+        if [ ! -s {output} ]; then
             rm -f {output}
             curl -s {params.backup_url} | gunzip -c > {output}
         fi
         """
 
 
-rule download_predicted_proteins_or_predict_proteins_with_transdecoder:
+rule predict_proteins_with_transdecoder:
     """
     Initially, we had a bash if statement controlling whether or not to download the CDS sequences
     from the TSA directly or to predict the CDS sequences using transdecoder. We removed this and
@@ -63,24 +63,14 @@ rule download_predicted_proteins_or_predict_proteins_with_transdecoder:
         fasta_cds_na="input_data/tsa_tick_sg_transcriptomes/{tsa_accession}/{tsa_accession}_fasta_cds_na.fa",
     params:
         tmp_outdir="tmp/transdecoder/",
-        has_annotation=lambda wildcards: metadata.loc[wildcards.tsa_accession, "has_annotation"],
     conda:
         "envs/transdecoder.yml"
     shell:
         """
-        # If the accession has annotations (predicted gene/proteins), download these
-        if [ "{params.has_annotation}" == "Y" ]; then
-            esearch -db nuccore -query {wildcards.tsa_accession} | \
-                efetch -format fasta_cds_aa > {output.fasta_cds_aa}
-            esearch -db nuccore -query {wildcards.tsa_accession} | \
-                efetch -format fasta_cds_na > {output.fasta_cds_na}
-        # If not, predict genes from the input contigs using transdecoder
-        elif [ "{params.has_annotation}" == "N" ]; then
-            TransDecoder.LongOrfs -t {input} --output_dir {params.tmp_outdir}
-            TransDecoder.Predict -t {input} --output_dir {params.tmp_outdir}
-            mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.pep {output.fasta_cds_aa}
-            mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.cds {output.fasta_cds_na}
-        fi 
+        TransDecoder.LongOrfs -t {input} --output_dir {params.tmp_outdir}
+        TransDecoder.Predict -t {input} --output_dir {params.tmp_outdir}
+        mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.pep {output.fasta_cds_aa}
+        mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.cds {output.fasta_cds_na}
         """
 
 
