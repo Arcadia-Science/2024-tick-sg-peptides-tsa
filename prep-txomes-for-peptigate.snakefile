@@ -2,7 +2,7 @@ import pandas as pd
 
 metadata = pd.read_csv("inputs/tick_sg_transcriptomes_tsa.csv")
 # set the accession as the index to allow us to use loc in params statements below
-metadata = metadata.set_index("tsa_accession", drop = False)
+metadata = metadata.set_index("tsa_accession", drop=False)
 TSA_ACCESSIONS = metadata["tsa_accession"].unique().tolist()
 # Note that this file variable is important as it is used to create the config file.
 FILETYPES = ["fasta_cds_aa", "fasta_cds_na", "fasta"]
@@ -102,14 +102,14 @@ rule create_peptigate_config:
         fasta_cds_na = str(input[1])
         fasta = str(input[2])
         config_template = """\
-        input_dir: "inputs/"
-        output_dir: "outputs/tsa_tick_sg_transcriptomes/{tsa_accession}/"
-        orfs_amino_acids: {fasta_cds_aa}
-        orfs_nucleotides: {fasta_cds_na}
-        contigs_shorter_than_r2t_minimum_length: {empty}
-        contigs_longer_than_r2t_minimum_length: {fasta}
-        plmutils_model_dir: "inputs/models/plmutils/"
-        """
+                input_dir: "inputs/"
+                output_dir: "outputs/tsa_tick_sg_transcriptomes/{tsa_accession}/"
+                orfs_amino_acids: {fasta_cds_aa}
+                orfs_nucleotides: {fasta_cds_na}
+                contigs_shorter_than_r2t_minimum_length: {empty}
+                contigs_longer_than_r2t_minimum_length: {fasta}
+                plmutils_model_dir: "inputs/models/plmutils/"
+                """
         with open(output.config, "wt") as fp:
             fp.write(
                 config_template.format(
