@@ -68,7 +68,7 @@ rule predict_proteins_with_transdecoder:
     shell:
         """
         TransDecoder.LongOrfs -t {input} --output_dir {params.tmp_outdir}
-        TransDecoder.Predict -t {input} --output_dir {params.tmp_outdir}
+        TransDecoder.Predict -t {input} --output_dir {params.tmp_outdir} --no_refine_starts
         mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.pep {output.fasta_cds_aa}
         mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.cds {output.fasta_cds_na}
         """
