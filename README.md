@@ -1,4 +1,4 @@
-# TODO: Replace with the name of the repo
+# 2024-tick-sg-peptides-tsa: Predicting peptide sequences from tick salivary gland transcriptomes in the Transcriptome Shotgun Assembly database 
 
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/projects/miniconda/en/latest/)
 [![Snakemake](https://img.shields.io/badge/snakemake--green)](https://snakemake.readthedocs.io/en/stable/)
@@ -43,8 +43,8 @@ TBD
 ### [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile)
 
 The TSA is notoriously unreliable for downloading files.
-While in theory one should be able to download transcriptome assemblies and predicted proteins directly from the TSA using NCBI's [Entrez-Direct](https://www.ncbi.nlm.nih.gov/books/NBK179288/) tool, in practice this approaches is spotty and suffers from outages.
-When using this approach, we received error message like the following:
+While in theory one should be able to download transcriptome assemblies and predicted proteins directly from the TSA using NCBI's [Entrez-Direct](https://www.ncbi.nlm.nih.gov/books/NBK179288/) tool, in practice this approach is spotty due to outages.
+When using this approach, we received error message like the following for a subset of transcriptomes:
 
 ```
 $ esearch -db nuccore -query GKHV01 |             efetch -format fasta > GKHV01_fasta.fa
@@ -62,21 +62,17 @@ EMPTY RESULT
 QUERY FAILURE
 ``` 
 
-We received this error with and without using an API and with the entrez-direct tool installed via NCBI's installation method or via conda.
+We received this error:
+* With and without using an NCBI API
+* With the entrez-direct tool installed via NCBI's installation method or via conda
+* On a local (MacOS) computer and on an AWS EC2 instance.
+
 As such, we provide a backup url from which to download the transcriptome assemblies.
-Further, while one can programmatically download protein predictions in amino acid or nucleotide format if they are available  using entrez-direct, the TSA only provides links for the contigs in nucleotide format or the proteins in amino acid format.
+This two-step download approach is baked into the Snakefile.
+Further, while one can programmatically download protein predictions in amino acid or nucleotide format if they are available using entrez-direct, the TSA only provides links for the contigs in nucleotide format or the proteins in amino acid format.
 Given this, and how spotty entrez-direct coverage of the TSA is, we chose to predict proteins using TransDecoder for all transcriptomes, whether they have annotations available or not.
-This is documented in line in the snakefile.
+These decisions are documented in docstrings in the Snakefile and executed with the code itself.
  
-**Tips for Developers**
-
-You can use the following command to export your current conda environment to a `yml` file.  
-This command will only export the packages that you have installed directly, not the ones that were installed as dependencies. When you're ready to share, please delete this section.
-
-```{bash}
-conda env export --from-history --no-builds > envs/dev.yml
-```
-
 ## Data
 
 TODO: Add details about the description of input / output data and links to Zenodo depositions, if applicable.
@@ -99,26 +95,3 @@ TODO: Describe what compute resources were used to run the analysis. For example
 ## Contributing
 
 See how we recognize [feedback and contributions to our code](https://github.com/Arcadia-Science/arcadia-software-handbook/blob/main/guides-and-standards/guide-credit-for-contributions.md).
-
----
-## For Developers
-
-This section contains information for developers who are working off of this template. Please delete this section when you're ready to share your repository.
-
-### GitHub templates
-This template uses GitHub templates to provide checklists when making new pull requests as well as templates for issues, which could be used to request new features or report bugs. These templates are stored in the [.github/](./.github/) directory.
-
-### VSCode
-This template includes recommendations to VSCode users for extensions, particularly the `ruff` linter. These recommendations are stored in `.vscode/extensions.json`. When you open the repository in VSCode, you should see a prompt to install the recommended extensions. 
-
-### `.gitignore`
-This template uses a `.gitignore` file to prevent certain files from being committed to the repository.
-
-### `pyproject.toml`
-`pyproject.toml` is a configuration file to specify your project's metadata and to set the behavior of other tools such as linters, type checkers etc. You can learn more [here](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
-
-### Linting
-This template automates linting and formatting using GitHub Actions and the `ruff` and `snakefmt` linters. When you push changes to your repository, GitHub will automatically run the linter and report any errors, blocking merges until they are resolved.
-
-### Testing
-This template uses GitHub Actions to automate a test dry run of the pipeline. When you push changes to your repository, GitHub will automatically run the tests and report any errors, blocking merges until they are resolved.
