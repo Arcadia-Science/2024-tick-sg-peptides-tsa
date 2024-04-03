@@ -9,6 +9,7 @@ ACCESSIONS = TSA_ACCESSIONS + ["amblyommaamericanum"]
 ## Combine peptide predictions
 #########################################################
 
+
 rule combine_peptigate_protein_peptide_sequences:
     input:
         expand(
@@ -227,18 +228,21 @@ machine learning model that can detect this bioactivity. This set of rules uses 
 peptigate predicted peptides against anti-pruritic peptides.
 """
 
+
 rule combine_antipruritic_peptide_sequences:
     input:
         "inputs/antipruritic_peptides/calcitonin_gene-related_peptide.faa.gz",
         "inputs/antipruritic_peptides/dynorphin.faa.gz",
         "inputs/antipruritic_peptides/tachykinin-4.faa.gz",
         "inputs/antipruritic_peptides/votucalis.faa.gz",
-        "inputs/antipruritic_peptides/ziconotide.faa.gz"
-    output: faa="inputs/antipruritic_peptides/antipruritic_peptides.faa"
+        "inputs/antipruritic_peptides/ziconotide.faa.gz",
+    output:
+        faa="inputs/antipruritic_peptides/antipruritic_peptides.faa",
     shell:
         """
         cat {input} | gunzip > {output}
         """
+
 
 rule make_diamond_blastdb_for_antipruritic_peptides:
     input:
@@ -270,8 +274,6 @@ rule blastp_peptide_predictions_against_antipruritic_peptides:
         diamond blastp -d {params.dbprefix} -q {input.faa} -o {output.tsv} --header simple \
          --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
         """
-
-
 
 
 #########################################################
