@@ -47,7 +47,7 @@ rule deduplicate_peptigate_parent_protein_sequences:
     remove these duplications.
     """
     input:
-        rules.combine_peptigate_parent_protein_sequence.output.faa,
+        rules.combine_peptigate_parent_protein_sequences.output.faa,
     output:
         faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides_deduplicated.faa",
     conda:
@@ -84,10 +84,10 @@ rule cluster_peptigate_protein_peptide_sequences:
     input:
         faa=rules.combine_peptigate_protein_peptide_sequences.output.faa,
     output:
-        faa="outputs/clustering/all_peptides_0.8_rep_seq.fasta",
-        tsv="outputs/clustering/all_peptides_0.8_cluster.tsv",
+        faa="outputs/analysis/clustering/all_peptides_0.8_rep_seq.fasta",
+        tsv="outputs/analysis/clustering/all_peptides_0.8_cluster.tsv",
     params:
-        out_prefix="outputs/clustering/all_peptides_0.8",
+        out_prefix="outputs/analysis/clustering/all_peptides_0.8",
     conda:
         "envs/mmseqs2.yml"
     shell:
@@ -229,10 +229,15 @@ peptigate predicted peptides against anti-pruritic peptides.
 
 rule combine_antipruritic_peptide_sequences:
     input:
-    output: faa=
+        "inputs/antipruritic_peptides/calcitonin_gene-related_peptide.faa.gz",
+        "inputs/antipruritic_peptides/dynorphin.faa.gz",
+        "inputs/antipruritic_peptides/tachykinin-4.faa.gz",
+        "inputs/antipruritic_peptides/votucalis.faa.gz",
+        "inputs/antipruritic_peptides/ziconotide.faa.gz"
+    output: faa="inputs/antipruritic_peptides/antipruritic_peptides.faa"
     shell:
         """
-        cat {input} > {output}
+        cat {input} | gunzip > {output}
         """
 
 rule make_diamond_blastdb_for_antipruritic_peptides:
@@ -347,7 +352,7 @@ rule download_eggnog_db:
         "envs/eggnog.yml"
     shell:
         """
-        download_eggnog_data.py -H -d 2 -y --data_dir {params.dbdir}
+        download_eggnog_data.py -y --data_dir {params.dbdir}
         """
 
 
