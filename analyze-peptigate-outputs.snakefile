@@ -9,7 +9,10 @@ ACCESSIONS = TSA_ACCESSIONS + ["amblyommaamericanum"]
 
 rule combine_peptigate_protein_peptide_sequences:
     input:
-        expand("outputs/tsa_tick_sg_transcriptomes/{accession}/predictions/peptides.faa", accession = ACCESSIONS),
+        expand(
+            "outputs/tsa_tick_sg_transcriptomes/{accession}/predictions/peptides.faa",
+            accession=ACCESSIONS,
+        ),
     output:
         faa="outputs/analysis/peptigate_outputs_combined/all_peptides.faa",
     shell:
@@ -100,16 +103,16 @@ rule unzip_autopeptideml_antiinflammatory_model:
 
 
 rule download_autopeptideml_run_script_from_peptigate:
-        """
+    """
         Note this won't work until the peptigate repo is public.
         I did this step by hand but I'm adding the rule as a placeholder.
         I think this is preferable over checking in the script here as well so that it doesn't become
         duplicated and need to be updated as the peptigate repo changes.
         """
-        output:
-            script="scripts/run_autopeptideml.py",
-        shell:
-            """
+    output:
+        script="scripts/run_autopeptideml.py",
+    shell:
+        """
             curl -JLo {output} https://raw.githubusercontent.com/Arcadia-Science/peptigate/52a93c07cb46b950d9b379a8e3812d57c41b800a/scripts/run_autopeptideml.py
             """
 
