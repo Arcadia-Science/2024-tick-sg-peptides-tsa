@@ -328,7 +328,7 @@ rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
     conda:
         "envs/kofamscan.yml"
     params:
-        profilesdir="outputs/databases/kofamscandb/profiles",
+        profilesdir="inputs/databases/kofamscandb/profiles",
     threads: 8
     shell:
         """
