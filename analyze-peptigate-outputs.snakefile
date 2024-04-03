@@ -1,11 +1,13 @@
 import pandas as pd
 
 metadata = pd.read_csv("inputs/tick_sg_transcriptomes_tsa.csv")
-# set the accession as the index to allow us to use loc in params statements below
 metadata = metadata.set_index("tsa_accession", drop=False)
 TSA_ACCESSIONS = metadata["tsa_accession"].unique().tolist()
 ACCESSIONS = TSA_ACCESSIONS + ["amblyommaamericanum"]
 
+#########################################################
+## Combine peptide predictions
+#########################################################
 
 rule combine_peptigate_protein_peptide_sequences:
     input:
@@ -225,13 +227,46 @@ machine learning model that can detect this bioactivity. This set of rules uses 
 peptigate predicted peptides against anti-pruritic peptides.
 """
 
-# rule download_antipruritic_peptide_sequences:
+rule combine_antipruritic_peptide_sequences:
+    input:
+    output: faa=
+    shell:
+        """
+        cat {input} > {output}
+        """
 
-# rule combine_antipruritic_peptide_sequences:
+rule make_diamond_blastdb_for_antipruritic_peptides:
+    input:
+        rules.combine_antipruritic_peptide_sequences.output.faa,
+    output:
+        dmnd="inputs/databases/antipruritic_peptides/antipruritic_peptides.dmnd",
+    conda:
+        "envs/diamond.yml"
+    params:
+        dbprefix="inputs/databases/antipruritic_peptides/antipruritic_peptides",
+    shell:
+        """
+        diamond makedb --in {input} -d {params.dbprefix}
+        """
 
-# rule make_diamond_blastdb_for_antipruritic_peptide_sequences:
 
-# rule blastp_peptide_predictions_against_antipruritic_peptides:
+rule blastp_peptide_predictions_against_antipruritic_peptides:
+    input:
+        db=rules.make_diamond_blastdb_for_antipruritic_peptides.output.dmnd,
+        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa,
+    output:
+        tsv="outputs/analysis/predict_antipruritic.tsv",
+    params:
+        dbprefix="inputs/databases/antipruritic_peptides/antipruritic_peptides",
+    conda:
+        "envs/diamond.yml"
+    shell:
+        """
+        diamond blastp -d {params.dbprefix} -q {input.faa} -o {output.tsv} --header simple \
+         --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
+        """
+
+
 
 
 #########################################################
