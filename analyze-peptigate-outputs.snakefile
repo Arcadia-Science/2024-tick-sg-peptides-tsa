@@ -4,12 +4,12 @@ metadata = pd.read_csv("inputs/tick_sg_transcriptomes_tsa.csv")
 # set the accession as the index to allow us to use loc in params statements below
 metadata = metadata.set_index("tsa_accession", drop=False)
 TSA_ACCESSIONS = metadata["tsa_accession"].unique().tolist()
-ACCESSIONS = TSA_ACCESSIONS, ""
+ACCESSIONS = TSA_ACCESSIONS + ["amblyommaamericanum"]
 
 
 rule combine_peptigate_protein_peptide_sequences:
     input:
-        expand("outputs/tsa_tick_sg_transcriptomes/{accessions}/predictions/peptides.faa"),
+        expand("outputs/tsa_tick_sg_transcriptomes/{accession}/predictions/peptides.faa", accession = ACCESSIONS),
     output:
         faa="outputs/analysis/peptigate_outputs_combined/all_peptides.faa",
     shell:
@@ -21,11 +21,11 @@ rule combine_peptigate_protein_peptide_sequences:
 rule combine_peptigate_parent_protein_sequences:
     input:
         expand(
-            "outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/nlpprecursor/nlpprecursor_peptide_parents.faa",
+            "outputs/tsa_tick_sg_transcriptomes/{accession}/cleavage/nlpprecursor/nlpprecursor_peptide_parents.faa",
             accession=ACCESSIONS,
         ),
         expand(
-            "outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/deeppeptide/deeppeptide_peptide_parents.faa",
+            "outputs/tsa_tick_sg_transcriptomes/{accession}/cleavage/deeppeptide/deeppeptide_peptide_parents.faa",
             accession=ACCESSIONS,
         ),
     output:
@@ -110,8 +110,8 @@ rule download_autopeptideml_run_script_from_peptigate:
             script="scripts/run_autopeptideml.py",
         shell:
             """
-        curl -JLo {output} https://raw.githubusercontent.com/Arcadia-Science/peptigate/52a93c07cb46b950d9b379a8e3812d57c41b800a/scripts/run_autopeptideml.py
-        """
+            curl -JLo {output} https://raw.githubusercontent.com/Arcadia-Science/peptigate/52a93c07cb46b950d9b379a8e3812d57c41b800a/scripts/run_autopeptideml.py
+            """
 
 
 rule predict_antiinflammatory_bioactivity_with_autopeptideml:
@@ -174,7 +174,7 @@ rule make_diamond_blastdb_for_human_peptide_atlas:
         dbprefix="inputs/databases/humanpeptideatlas/APD_Hs_all",
     shell:
         """
-        diamond makedb --in {input.db} -d {params.dbprefix}
+        diamond makedb --in {input} -d {params.dbprefix}
         """
 
 
@@ -190,7 +190,7 @@ rule blastp_peptide_predictions_against_human_peptide_atlas:
         "envs/diamond.yml"
     shell:
         """
-        diamond blastp -d {params.dbprefix} -q {input.peptide_faa} -o {output.tsv} --header simple \
+        diamond blastp -d {params.dbprefix} -q {input.faa} -o {output.tsv} --header simple \
          --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
         """
 
@@ -234,9 +234,9 @@ rule download_kofamscan_ko_list:
         kolist="inputs/databases/kofamscandb/ko_list",
     shell:
         """
-    curl -JLo {output}.gz ftp://ftp.genome.jp/pub/db/kofam/ko_list.gz && \
-        gunzip -c {output}.gz > {output}
-    """
+        curl -JLo {output}.gz ftp://ftp.genome.jp/pub/db/kofam/ko_list.gz && \
+            gunzip -c {output}.gz > {output}
+        """
 
 
 rule download_kofamscan_profiles:
@@ -249,9 +249,9 @@ rule download_kofamscan_profiles:
         outdir="inputs/databases/kofamscandb/",
     shell:
         """
-    curl -JLo {params.outdir}/profiles.tar.gz ftp://ftp.genome.jp/pub/db/kofam/profiles.tar.gz && \
-        tar xf {params.outdir}/profiles.tar.gz -C {params.outdir}
-    """
+        curl -JLo {params.outdir}/profiles.tar.gz ftp://ftp.genome.jp/pub/db/kofam/profiles.tar.gz && \
+            tar xf {params.outdir}/profiles.tar.gz -C {params.outdir}
+        """
 
 
 rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
@@ -272,11 +272,11 @@ rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
     threads: 8
     shell:
         """
-    exec_annotation --format detail-tsv \
-        --ko-list {input.kolist} \
-        --profile {params.profilesdir} \
-        --cpu {threads} -o {output} {input.faa}
-    """
+        exec_annotation --format detail-tsv \
+            --ko-list {input.kolist} \
+            --profile {params.profilesdir} \
+            --cpu {threads} -o {output} {input.faa}
+        """
 
 
 rule download_eggnog_db:
@@ -292,8 +292,8 @@ rule download_eggnog_db:
         "envs/eggnog.yml"
     shell:
         """
-    download_eggnog_data.py -H -d 2 -y --data_dir {params.dbdir}
-    """
+        download_eggnog_data.py -H -d 2 -y --data_dir {params.dbdir}
+        """
 
 
 rule annotate_cleavage_peptide_parent_proteins_with_eggnog:
@@ -316,12 +316,12 @@ rule annotate_cleavage_peptide_parent_proteins_with_eggnog:
     threads: 8
     shell:
         """
-    mkdir -p tmp
-    emapper.py --cpu {threads} -i {input.fa} --output eggnog \
-       --output_dir {params.outdir} -m diamond --tax_scope none \
-       --seed_ortholog_score 60 --override --temp_dir tmp/ \
-       --data_dir {params.dbdir}
-    """
+        mkdir -p tmp
+        emapper.py --cpu {threads} -i {input.faa} --output eggnog \
+           --output_dir {params.outdir} -m diamond --tax_scope none \
+           --seed_ortholog_score 60 --override --temp_dir tmp/ \
+           --data_dir {params.dbdir}
+        """
 
 
 #########################################################
