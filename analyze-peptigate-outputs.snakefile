@@ -44,13 +44,17 @@ rule deduplicate_peptigate_parent_protein_sequences:
     some sequences could give rise to two peptides.
     remove these duplications.
     """
-    input: rules.combine_peptigate_parent_protein_sequence.output.faa
-    output: faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides_deduplicated.faa",
-    conda: "envs/seqkit.yml"
+    input:
+        rules.combine_peptigate_parent_protein_sequence.output.faa,
+    output:
+        faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides_deduplicated.faa",
+    conda:
+        "envs/seqkit.yml"
     shell:
         """
         seqkit rmdup --by-name -o {output.faa} {input}
         """
+
 
 #########################################################
 ## Cluster peptide sequences
