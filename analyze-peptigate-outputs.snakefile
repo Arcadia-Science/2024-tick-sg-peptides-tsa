@@ -92,7 +92,7 @@ rule download_autopeptideml_run_script_from_peptigate:
     output: "scripts/run_autopeptideml.py"
     shell:
         """
-        curl -JLo {output}
+        curl -JLo {output} https://raw.githubusercontent.com/Arcadia-Science/peptigate/52a93c07cb46b950d9b379a8e3812d57c41b800a/scripts/run_autopeptideml.py
         """
 
 rule predict_antiinflammatory_bioactivity_with_autopeptideml:
@@ -285,4 +285,3 @@ rule all:
         rule.cluster_peptigate_protein_peptide_sequences.output.tsv,
         rule.annotate_cleavage_peptide_parent_proteins_with_eggnog.output.tsv,
         rule.annotate_cleavage_peptide_parent_proteins_with_kofamscan.output.tsv
-
