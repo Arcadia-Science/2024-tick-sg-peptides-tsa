@@ -6,26 +6,35 @@ metadata = metadata.set_index("tsa_accession", drop=False)
 TSA_ACCESSIONS = metadata["tsa_accession"].unique().tolist()
 ACCESSIONS = TSA_ACCESSIONS, ""
 
-# outputs/tsa_tick_sg_transcriptomes/GANP01/predictions
-# peptide_annotations.tsv peptide_predictions.tsv peptides.faa            peptides.ffn            peptides_faa.tsv        peptides_ffn.tsv
 
 rule combine_peptigate_protein_peptide_sequences:
-    input: expand("outputs/tsa_tick_sg_transcriptomes/{accessions}/predictions/peptides.faa"),
-    output: faa="outputs/analysis/peptigate_outputs_combined/all_peptides.faa"
+    input:
+        expand("outputs/tsa_tick_sg_transcriptomes/{accessions}/predictions/peptides.faa"),
+    output:
+        faa="outputs/analysis/peptigate_outputs_combined/all_peptides.faa",
     shell:
         """
         cat {input} > {output}
         """
+
 
 rule combine_peptigate_parent_protein_sequences:
     input:
-        expand("outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/nlpprecursor/nlpprecursor_peptide_parents.faa", accession = ACCESSIONS),
-        expand("outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/deeppeptide/deeppeptide_peptide_parents.faa", accession = ACCESSIONS)
-    output: faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides.faa"
+        expand(
+            "outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/nlpprecursor/nlpprecursor_peptide_parents.faa",
+            accession=ACCESSIONS,
+        ),
+        expand(
+            "outputs/tsa_tick_sg_transcriptomes/{accessions}/cleavage/deeppeptide/deeppeptide_peptide_parents.faa",
+            accession=ACCESSIONS,
+        ),
+    output:
+        faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides.faa",
     shell:
         """
         cat {input} > {output}
         """
+
 
 #########################################################
 ## Cluster peptide sequences
@@ -48,13 +57,17 @@ We assume that 80% similarlity is a nice balance between clustering peptides tha
 sequence and function and retaining diversity/heterogeneity of peptides in the data set.
 """
 
+
 rule cluster_peptigate_protein_peptide_sequences:
-    input: faa=rules.combine_peptigate_protein_peptide_sequences.output.faa
+    input:
+        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa,
     output:
         faa="outputs/clustering/all_peptides_0.8_rep_seq.fasta",
-        tsv="outputs/clustering/all_peptides_0.8_cluster.tsv"
-    params: out_prefix = "outputs/clustering/"
-    conda: "envs/mmseqs2.yml"
+        tsv="outputs/clustering/all_peptides_0.8_cluster.tsv",
+    params:
+        out_prefix="outputs/clustering/",
+    conda:
+        "envs/mmseqs2.yml"
     shell:
         """
         mkdir -p tmp
@@ -62,10 +75,10 @@ rule cluster_peptigate_protein_peptide_sequences:
         """
 
 
+#########################################################
+## Predict anti-inflammatory bioactivity
+#########################################################
 
-#########################################################
-## Predict anti-inflammatory bioactivity 
-#########################################################
 
 rule unzip_autopeptideml_antiinflammatory_model:
     """
@@ -73,37 +86,45 @@ rule unzip_autopeptideml_antiinflammatory_model:
     Issue [#2](https://github.com/Arcadia-Science/2024-tick-sg-peptides-tsa/issues/2) documents how
     we built it.
     """
-    input: "inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15.zip"
-    output: json="inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/config.json"
-    params: outdir = "inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/"
+    input:
+        "inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15.zip",
+    output:
+        json="inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/config.json",
+    params:
+        outdir="inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/",
     shell:
         """
         mkdir -p {params.outdir}
         unzip {input} -d {params.outdir}
         """
 
+
 rule download_autopeptideml_run_script_from_peptigate:
-   """
-   Note this won't work until the peptigate repo is public.
-   I did this step by hand but I'm adding the rule as a placeholder.
-   I think this is preferable over checking in the script here as well so that it doesn't become
-   duplicated and need to be updated as the peptigate repo changes.
-   """
-    output: "scripts/run_autopeptideml.py"
-    shell:
         """
+        Note this won't work until the peptigate repo is public.
+        I did this step by hand but I'm adding the rule as a placeholder.
+        I think this is preferable over checking in the script here as well so that it doesn't become
+        duplicated and need to be updated as the peptigate repo changes.
+        """
+        output:
+            script="scripts/run_autopeptideml.py",
+        shell:
+            """
         curl -JLo {output} https://raw.githubusercontent.com/Arcadia-Science/peptigate/52a93c07cb46b950d9b379a8e3812d57c41b800a/scripts/run_autopeptideml.py
         """
 
+
 rule predict_antiinflammatory_bioactivity_with_autopeptideml:
     input:
-        script=rule.download_autopeptideml_run_script_from_peptigate.output,
-        model=rule.unzip_autopeptideml_antiinflammatory_model.output.json,
-        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa
+        script=rules.download_autopeptideml_run_script_from_peptigate.output.script,
+        model=rules.unzip_autopeptideml_antiinflammatory_model.output.json,
+        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa,
     output:
-        tsv="outputs/analysis/predict_antiinflammatory/autopeptideml_antiinflammatory_predictions.tsv"
-    params: model_dir="inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/ensemble"
-    conda: "envs/autopeptideml.yml"
+        tsv="outputs/analysis/predict_antiinflammatory/autopeptideml_antiinflammatory_predictions.tsv",
+    params:
+        model_dir="inputs/autopeptideml_antiinflammatory/apml_antiinflammatory_length15/ensemble",
+    conda:
+        "envs/autopeptideml.yml"
     shell:
         """
         python scripts/run_autopeptideml.py \
@@ -115,7 +136,7 @@ rule predict_antiinflammatory_bioactivity_with_autopeptideml:
 
 
 #########################################################
-## Compare against human peptides 
+## Compare against human peptides
 #########################################################
 """
 With this analysis, we hope to identify tick peptides that potentially mimic human peptides.
@@ -132,31 +153,39 @@ While we are not interested in these, we are relying on our tools to limit hits 
 because we anticipate that peptigate will only predict bioactive peptides.
 """
 
+
 rule download_human_peptide_atlas_peptide_sequences:
-    output: "inputs/databases/humanpeptideatlas/APD_Hs_all.fasta"
+    output:
+        faa="inputs/databases/humanpeptideatlas/APD_Hs_all.fasta",
     shell:
         """
-        curl -JLo {output} https://peptideatlas.org/builds/human/202401/APD_Hs_all.fasta
+        curl -JLo {output.faa} https://peptideatlas.org/builds/human/202401/APD_Hs_all.fasta
         """
 
+
 rule make_diamond_blastdb_for_human_peptide_atlas:
-    input: rules.download_human_peptide_atlas_peptide_sequences.output
-    output: dmnd="inputs/databases/humanpeptideatlas/APD_Hs_all.dmnd"
-    conda: "envs/diamond.yml"
-    params: dbprefix = "inputs/databases/humanpeptideatlas/APD_Hs_all"
+    input:
+        rules.download_human_peptide_atlas_peptide_sequences.output.faa,
+    output:
+        dmnd="inputs/databases/humanpeptideatlas/APD_Hs_all.dmnd",
+    conda:
+        "envs/diamond.yml"
+    params:
+        dbprefix="inputs/databases/humanpeptideatlas/APD_Hs_all",
     shell:
         """
         diamond makedb --in {input.db} -d {params.dbprefix}
         """
 
+
 rule blastp_peptide_predictions_against_human_peptide_atlas:
     input:
         db=rules.make_diamond_blastdb_for_human_peptide_atlas.output.dmnd,
-        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa
+        faa=rules.combine_peptigate_protein_peptide_sequences.output.faa,
     output:
         tsv="outputs/analysis/compare_human/humanpeptideatlas_blastp_matches.tsv",
     params:
-        dbprefix="inputs/databases/humanpeptideatlas/APD_Hs_all"
+        dbprefix="inputs/databases/humanpeptideatlas/APD_Hs_all",
     conda:
         "envs/diamond.yml"
     shell:
@@ -164,6 +193,7 @@ rule blastp_peptide_predictions_against_human_peptide_atlas:
         diamond blastp -d {params.dbprefix} -q {input.peptide_faa} -o {output.tsv} --header simple \
          --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
         """
+
 
 #########################################################
 ## Compare agaist known anti-pruritic peptides
@@ -175,13 +205,13 @@ machine learning model that can detect this bioactivity. This set of rules uses 
 peptigate predicted peptides against anti-pruritic peptides.
 """
 
-#rule download_antipruritic_peptide_sequences:
+# rule download_antipruritic_peptide_sequences:
 
-#rule combine_antipruritic_peptide_sequences:
+# rule combine_antipruritic_peptide_sequences:
 
-#rule make_diamond_blastdb_for_antipruritic_peptide_sequences:
+# rule make_diamond_blastdb_for_antipruritic_peptide_sequences:
 
-#rule blastp_peptide_predictions_against_antipruritic_peptides:
+# rule blastp_peptide_predictions_against_antipruritic_peptides:
 
 
 #########################################################
@@ -195,26 +225,34 @@ This module takes advantage of the longer sequence length of parent peptide sequ
 functional annotation to provide additional metadata about potential peptide function.
 """
 
+
 rule download_kofamscan_ko_list:
     """
     This rule downloads the kofamscan KEGG list file.
     """
-    output: kolist="inputs/databases/kofamscandb/ko_list"
-    shell:'''
+    output:
+        kolist="inputs/databases/kofamscandb/ko_list",
+    shell:
+        """
     curl -JLo {output}.gz ftp://ftp.genome.jp/pub/db/kofam/ko_list.gz && \
         gunzip -c {output}.gz > {output}
-    '''
+    """
+
 
 rule download_kofamscan_profiles:
     """
     This rule downloads the kofamscan KEGG hmm profiles.
     """
-    output: profiles="inputs/databases/kofamscandb/profiles/eukaryote.hal"
-    params: outdir = "inputs/databases/kofamscandb/"
-    shell:'''
+    output:
+        profiles="inputs/databases/kofamscandb/profiles/eukaryote.hal",
+    params:
+        outdir="inputs/databases/kofamscandb/",
+    shell:
+        """
     curl -JLo {params.outdir}/profiles.tar.gz ftp://ftp.genome.jp/pub/db/kofam/profiles.tar.gz && \
         tar xf {params.outdir}/profiles.tar.gz -C {params.outdir}
-    '''
+    """
+
 
 rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
     """
@@ -222,66 +260,80 @@ rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
     peptides. 
     """
     input:
-        faa=rules.combine_peptigate_parent_protein_sequences.output.faa
-        kolist=rules.download_kofamscan_ko_list.output.kolist
-        profiles=rules.download_kofamscan_profiles.profiles
-    output: tsv="outputs/analysis/annotate_cleavage_parent_proteins/kofamscan.tsv"
-    conda: "envs/kofamscan.yml"
-    params: profilesdir = "outputs/databases/kofamscandb/profiles"
+        faa=rules.combine_peptigate_parent_protein_sequences.output.faa,
+        kolist=rules.download_kofamscan_ko_list.output.kolist,
+        profiles=rules.download_kofamscan_profiles.output.profiles,
+    output:
+        tsv="outputs/analysis/annotate_cleavage_parent_proteins/kofamscan.tsv",
+    conda:
+        "envs/kofamscan.yml"
+    params:
+        profilesdir="outputs/databases/kofamscandb/profiles",
     threads: 8
-    shell:'''
+    shell:
+        """
     exec_annotation --format detail-tsv \
         --ko-list {input.kolist} \
         --profile {params.profilesdir} \
         --cpu {threads} -o {output} {input.faa}
-    '''
+    """
+
 
 rule download_eggnog_db:
     """
     This rule downloads the eggnog annotation database.
     The script download_eggnog_data.py is exported by the eggnog mapper tool.
     """
-    output: db="inputs/databases/eggnog_db/eggnog.db"
-    params: dbdir = "inputs/databases/eggnog_db"
-    conda: "envs/eggnog.yml"
-    shell:'''
+    output:
+        db="inputs/databases/eggnog_db/eggnog.db",
+    params:
+        dbdir="inputs/databases/eggnog_db",
+    conda:
+        "envs/eggnog.yml"
+    shell:
+        """
     download_eggnog_data.py -H -d 2 -y --data_dir {params.dbdir}
-    '''
+    """
+
 
 rule annotate_cleavage_peptide_parent_proteins_with_eggnog:
-    '''
+    """
     This rule uses the EggNOG database to functionally annotate the parent proteins of cleavage
     peptides.  It runs the EggNOG-Mapper tool, generating a file with the annotations (NOG, KEGG,
     PFAM, CAZys, EC numbers) for each gene. The script emapper.py is exported by the eggnog mapper
     tool.
-    '''
+    """
     input:
         db=rules.download_eggnog_db.output.db,
-        faa=rules.combine_peptigate_parent_protein_sequences.output.faa
-    output: tsv="outputs/analysis/annotate_cleavage_parent_proteins/eggnog.emapper.annotations"
-    conda: "envs/eggnog.yml"
+        faa=rules.combine_peptigate_parent_protein_sequences.output.faa,
+    output:
+        tsv="outputs/analysis/annotate_cleavage_parent_proteins/eggnog.emapper.annotations",
+    conda:
+        "envs/eggnog.yml"
     params:
         outdir="outputs/analysis/annotate_cleavage_parent_proteins/",
-        dbdir = "inputs/databases/eggnog_db/",
+        dbdir="inputs/databases/eggnog_db/",
     threads: 8
-    shell:'''
+    shell:
+        """
     mkdir -p tmp
     emapper.py --cpu {threads} -i {input.fa} --output eggnog \
        --output_dir {params.outdir} -m diamond --tax_scope none \
        --seed_ortholog_score 60 --override --temp_dir tmp/ \
        --data_dir {params.dbdir}
-    '''
+    """
 
 
 #########################################################
-## Collect outputs 
+## Collect outputs
 #########################################################
+
 
 rule all:
     default_target: True
     input:
-        rule.blastp_peptide_predictions_against_human_peptide_atlas.output.tsv,
-        rule.predict_antiinflammatory_bioactivity_with_autopeptideml.output.tsv,
-        rule.cluster_peptigate_protein_peptide_sequences.output.tsv,
-        rule.annotate_cleavage_peptide_parent_proteins_with_eggnog.output.tsv,
-        rule.annotate_cleavage_peptide_parent_proteins_with_kofamscan.output.tsv
+        rules.blastp_peptide_predictions_against_human_peptide_atlas.output.tsv,
+        rules.predict_antiinflammatory_bioactivity_with_autopeptideml.output.tsv,
+        rules.cluster_peptigate_protein_peptide_sequences.output.tsv,
+        rules.annotate_cleavage_peptide_parent_proteins_with_eggnog.output.tsv,
+        rules.annotate_cleavage_peptide_parent_proteins_with_kofamscan.output.tsv,
