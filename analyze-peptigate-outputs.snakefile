@@ -214,7 +214,7 @@ rule blastp_peptide_predictions_against_human_peptide_atlas:
     shell:
         """
         diamond blastp -d {params.dbprefix} -q {input.faa} -o {output.tsv} --header simple \
-         --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
+         --outfmt 6 qseqid sseqid full_sseq pident length qlen slen qcovhsp scovhsp mismatch gapopen qstart qend sstart send evalue bitscore
         """
 
 
@@ -272,7 +272,7 @@ rule blastp_peptide_predictions_against_antipruritic_peptides:
     shell:
         """
         diamond blastp -d {params.dbprefix} -q {input.faa} -o {output.tsv} --header simple \
-         --outfmt 6 qseqid sseqid full_sseq pident length qlen slen mismatch gapopen qstart qend sstart send evalue bitscore
+         --outfmt 6 qseqid sseqid full_sseq pident length qlen slen qcovhsp scovhsp mismatch gapopen qstart qend sstart send evalue bitscore
         """
 
 
@@ -395,6 +395,7 @@ rule all:
     default_target: True
     input:
         rules.blastp_peptide_predictions_against_human_peptide_atlas.output.tsv,
+        rules.blastp_peptide_predictions_against_antipruritic_peptides.output.tsv,
         rules.predict_antiinflammatory_bioactivity_with_autopeptideml.output.tsv,
         rules.cluster_peptigate_protein_peptide_sequences.output.tsv,
         rules.annotate_cleavage_peptide_parent_proteins_with_eggnog.output.tsv,
