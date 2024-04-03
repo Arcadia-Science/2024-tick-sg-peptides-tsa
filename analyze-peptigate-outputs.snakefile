@@ -39,6 +39,19 @@ rule combine_peptigate_parent_protein_sequences:
         """
 
 
+rule deduplicate_peptigate_parent_protein_sequences:
+    """
+    some sequences could give rise to two peptides.
+    remove these duplications.
+    """
+    input: rules.combine_peptigate_parent_protein_sequence.output.faa
+    output: faa="outputs/analysis/peptigate_outputs_combined/all_cleavage_parent_peptides_deduplicated.faa",
+    conda: "envs/seqkit.yml"
+    shell:
+        """
+        seqkit rmdup --by-name -o {output.faa} {input}
+        """
+
 #########################################################
 ## Cluster peptide sequences
 #########################################################
@@ -68,13 +81,13 @@ rule cluster_peptigate_protein_peptide_sequences:
         faa="outputs/clustering/all_peptides_0.8_rep_seq.fasta",
         tsv="outputs/clustering/all_peptides_0.8_cluster.tsv",
     params:
-        out_prefix="outputs/clustering/",
+        out_prefix="outputs/clustering/all_peptides_0.8",
     conda:
         "envs/mmseqs2.yml"
     shell:
         """
         mkdir -p tmp
-        mmseqs easy-cluster {input} mmseqs/all_peptide_predictions_0.8 tmp --min-seq-id 0.8 
+        mmseqs easy-cluster {input} {params.out_prefix} tmp --min-seq-id 0.8 
         """
 
 
@@ -263,7 +276,7 @@ rule annotate_cleavage_peptide_parent_proteins_with_kofamscan:
     peptides. 
     """
     input:
-        faa=rules.combine_peptigate_parent_protein_sequences.output.faa,
+        faa=rules.deduplicate_peptigate_parent_protein_sequences.output.faa,
         kolist=rules.download_kofamscan_ko_list.output.kolist,
         profiles=rules.download_kofamscan_profiles.output.profiles,
     output:
@@ -308,7 +321,7 @@ rule annotate_cleavage_peptide_parent_proteins_with_eggnog:
     """
     input:
         db=rules.download_eggnog_db.output.db,
-        faa=rules.combine_peptigate_parent_protein_sequences.output.faa,
+        faa=rules.deduplicate_peptigate_parent_protein_sequences.output.faa,
     output:
         tsv="outputs/analysis/annotate_cleavage_parent_proteins/eggnog.emapper.annotations",
     conda:
