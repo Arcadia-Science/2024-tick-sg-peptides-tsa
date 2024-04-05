@@ -31,12 +31,29 @@ snakemake -s prep-txomes-for-peptigate.snakefile --software-deployment-method co
 Then, supply this processed data and config files to run peptigate.
 The peptigate pipeline predicts peptides (sORF and cleavage) from transcriptome assemblies.
 We run this as a separate step because peptigate is its own Snakemake workflow in a GitHub repository and is not currently installable.
+We ran peptigate from the commit fda020929bbe53b30be3fbe27722b9356ea12635.
+We cloned the repository, copied our config and input data files to the repo folder, and ran peptigate with this for loop:
 
-TBD
+```{bash}
+for infile in input_configs/tsa_tick_sg_transcriptomes/*yml
+do
+snakemake --software-deployment-method conda -j 1 -k --configfile $infile
+done  
+```
 
-Lastly, we analyze the results of the peptigate pipeline.
+We then transferred the results back to this repo into the `outputs/tsa_tick_sg_transcriptomes` folder and analyzed them with the snakefile [`analyze-peptigate-outputs.snakefile`](./analyze-peptigate-outputs.snakefile).
 
-TBD
+```{bash}
+snakemake -s analyze-peptigate-outputs.snakefile --software-deployment-method conda -j 8 -k
+```
+
+Finally, we analyzed the results from this last snakefile using the notebooks in the [notebooks](./notebooks) directory.
+To run these notebooks, we use the `tidyjupyter` environment:
+
+```{bash}
+mamba env create -n tidyjupyter --file envs/tidyjupyter.yml
+conda activate tidyjupyter
+```
 
 ## Notes about the pipeline
 
@@ -90,7 +107,9 @@ When you're ready to share, please delete this section.
 
 ### Compute Specifications
 
-TODO: Describe what compute resources were used to run the analysis. For example, you could list the operating system, number of cores, RAM, and storage space.
+* [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile): Ran on a MacBookPro 2021 with 64 Gb of RAM and running MacOS Ventura 13.4. We executed all commands in a terminal running Rosetta.
+* peptigate pipeline: Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the pipeline runs many tools that use GPUs. 
+* [`analyze-peptigate-outputs.snakefile`](./analyze-peptigate-outputs.snakefile): Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the tool AutoPeptideML runs on a GPU.
 
 ## Contributing
 
