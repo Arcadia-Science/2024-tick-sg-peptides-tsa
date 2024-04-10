@@ -4,10 +4,15 @@ envs/src/**
 # Snakemake-related folders and files
 .snakemake/
 /input/
-/output/
+/outputs/
 /demo/output/
 /demo/input/
 /logs
+input_configs/
+input_data/
+sandbox/
+tmp/
+inputs/autopeptideml_antiinflammatory/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

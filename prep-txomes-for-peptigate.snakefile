@@ -97,26 +97,13 @@ rule create_peptigate_config:
         empty="input_data/tsa_tick_sg_transcriptomes/{tsa_accession}/{tsa_accession}_empty.fa",
     output:
         config="input_configs/tsa_tick_sg_transcriptomes/{tsa_accession}_config.yml",
-    run:
-        fasta_cds_aa = str(input[0])
-        fasta_cds_na = str(input[1])
-        fasta = str(input[2])
-        config_template = """\
-                input_dir: "inputs/"
-                output_dir: "outputs/tsa_tick_sg_transcriptomes/{tsa_accession}/"
-                orfs_amino_acids: {fasta_cds_aa}
-                orfs_nucleotides: {fasta_cds_na}
-                contigs_shorter_than_r2t_minimum_length: {empty}
-                contigs_longer_than_r2t_minimum_length: {fasta}
-                plmutils_model_dir: "inputs/models/plmutils/"
-                """
-        with open(output.config, "wt") as fp:
-            fp.write(
-                config_template.format(
-                    tsa_accession=wildcards.tsa_accession,
-                    fasta_cds_aa=fasta_cds_aa,
-                    fasta_cds_na=fasta_cds_na,
-                    empty=str(input.empty),
-                    fasta=fasta,
-                )
-            )
+    shell:
+        """
+        python scripts/create_peptigate_config.py \
+            --tsa_accession {wildcards.tsa_accession} \
+            --fasta_cds_aa {input.tsa[0]} \
+            --fasta_cds_na {input.tsa[1]} \
+            --empty {input.empty} \
+            --fasta {input.tsa[2]} \
+            --output {output.config}
+        """
