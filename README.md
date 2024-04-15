@@ -7,7 +7,7 @@
 
 This repository documents peptide discovery in tick salivary gland transcriptomes on the [TSA](https://www.ncbi.nlm.nih.gov/genbank/tsa/).
 
-## Installation and Setup
+## Installation, Setup, and Running the Pipeline
 
 This repository uses Snakemake to run the pipeline and conda to manage software environments and installations. You can find operating system-specific instructions for installing miniconda [here](https://docs.conda.io/projects/miniconda/en/latest/). After installing conda and [mamba](https://mamba.readthedocs.io/en/latest/), run the following command to create the pipeline run environment.
 
@@ -55,9 +55,37 @@ mamba env create -n tidyjupyter --file envs/tidyjupyter.yml
 conda activate tidyjupyter
 ```
 
-## Notes about the pipeline
+ 
+## Data
 
-### [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile)
+The data analyzed in this repository is recorded in in the CSV file [`tick_sg_transcriptomes_tsa.csv`](./inputs/tick_sg_transcriptomes_tsa.csv).
+We searched the [NCBI Transcriptome Shotgun Assembly sequence database](https://www.ncbi.nlm.nih.gov/genbank/tsa/) for salivary gland transcriptomes from tick species.
+The CSV file records the transcriptome accession numbers as well as metadata about the size of the transcriptome assembly.
+
+## Overview
+
+This repository records peptide discovery and analysis from publicly available tick salivary gland transcriptomes.
+As documented above, the analysis proceeds in three parts, beginning with data acquisition, progressing to peptide prediction, and finishing with peptide analysis.
+
+### Description of the folder structure
+
+* envs: Contains conda environment yaml files used by snakemake and to run the snakemake pipelines and notebooks.
+* inputs: Contains input files for the analysis as well as models for tools used in the repository.
+* notebooks: Contains jupyter notebooks that analyze the predicted peptides.
+* scripts: Scripts executed by the snakemake pipelines.
+* LICENSE: Details re-use constraints.
+* README.md: Documents the project and provides run instructions.
+* `analyze-peptigate-outputs.snakefile`: Documents the steps taken to analyze (annotate and compare) the peptide sequences predicted by peptigate.
+* `prep-txomes-for-peptigate.snakefile`: Documents the steps taken to prepare the TSA transcriptomes for peptigate.
+* .github, .vscode, .gitignore, .pre-commit-config.yaml, Makefile, pyproject.toml: Snakemake template files that control the developer environment of the repository. See the [Arcadia-Science/snakemake-template](https://github.com/Arcadia-Science/snakemake-template) for more details.
+
+### Compute Specifications
+
+* [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile): Ran on a MacBookPro 2021 with 64 Gb of RAM and running MacOS Ventura 13.4. We executed all commands in a terminal running Rosetta.
+* peptigate pipeline: Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the pipeline runs many tools that use GPUs. 
+* [`analyze-peptigate-outputs.snakefile`](./analyze-peptigate-outputs.snakefile): Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the tool AutoPeptideML runs on a GPU.
+
+### Notes about [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile)
 
 The TSA is notoriously unreliable for downloading files.
 While in theory one should be able to download transcriptome assemblies and predicted proteins directly from the TSA using NCBI's [Entrez-Direct](https://www.ncbi.nlm.nih.gov/books/NBK179288/) tool, in practice this approach is spotty due to outages.
@@ -89,27 +117,57 @@ This two-step download approach is baked into the Snakefile.
 Further, while one can programmatically download protein predictions in amino acid or nucleotide format if they are available using entrez-direct, the TSA only provides links for the contigs in nucleotide format or the proteins in amino acid format.
 Given this, and how spotty entrez-direct coverage of the TSA is, we chose to predict proteins using TransDecoder for all transcriptomes, whether they have annotations available or not.
 These decisions are documented in docstrings in the Snakefile and executed with the code itself.
- 
-## Data
 
-TODO: Add details about the description of input / output data and links to Zenodo depositions, if applicable.
+## Overview of results
 
-## Overview
+The results covered here are documented in greater detail in the analysis notebooks in the [notebooks](./notebooks) folder.
 
-### Description of the folder structure
+Tick salivary gland transcriptomes contain thousands of predicted peptides, many of which have predicted anti-inflammatory or anti-pruritic bioactivity.
+We predicted peptide sequences from 28 publicly available tick salivary gland transcriptomes as well as the *A. americanum* (whole body, midgut, and salivary gland) transcriptome assembled in a [previous pilot](https://github.com/Arcadia-Science/2023-amblyomma-americanum-txome-assembly/).
+In total, peptigate predicted 224,433 peptides (17,468 cleavage, 206,965 sORF) from 18 tick species from the genera *Amblyomma*, *Hyalomma*, *Ixodes*, *Ornithodoros*, and *Rhipicephalus*.
 
-### Description of how the tool works
+### Peptides with predicted anti-inflammatory bioactivity
 
-**Tips for Developers**
+See [this notebook](./notebooks/20240404-antiinflammatory-peptides.ipynb) for more information.
+We predicted that 8,735 peptides (2,268 cleavage, 6467 sORF) had anti-inflammatory bioactivity (see [this issue](https://github.com/Arcadia-Science/2024-tick-sg-peptides-tsa/issues/2) for how we predicted anti-inflammatory bioactivity). The machine learning model we used had a 71% accuracy rate. 
 
-You should consider having a quickstart guide for users who want to run the pipeline, and/or a demo dataset that they can use to test the pipeline.  
-When you're ready to share, please delete this section.
+We struggled with paring down this list of peptides to hone in on those worth experimentally validating.
+We decided to move forward with peptides that were predicted in multiple transcriptomes.
+We assume that peptides that are in multiple transcriptomes contain some signature of evolution that supports their biological importance.
+We clustered all predicted peptides at 80% sequence identity and retained anti-inflammatory peptides that were in clusters that contained at least 2 sequences.
+This led to 830 peptides in 630 different clusters (759 cleavage, 71 sORF from 18 species). See the table below for how the number of peptides and clusters changes by increasing the number of times a peptide has to be observed for it to be retained
 
-### Compute Specifications
+| Cluster contains at least this many peptides | Number of anti-inflammatory peptides | Number of clusters (representative peptides) |
+| --- | --- | --- |
+| 2 | 830 | 630 |
+| 3 | 485 | 318 |
+| 4 | 333 | 198 |
+| 5 | 263 | 146 |
+| 6 | 228 | 115 |
+| 7 | 202 | 96 |
+| 8 | 165 | 78 |
+| 9 | 142 | 66 |
+| 10 | 125 | 56 |
 
-* [`prep-txomes-for-peptigate.snakefile`](./prep-txomes-for-peptigate.snakefile): Ran on a MacBookPro 2021 with 64 Gb of RAM and running MacOS Ventura 13.4. We executed all commands in a terminal running Rosetta.
-* peptigate pipeline: Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the pipeline runs many tools that use GPUs. 
-* [`analyze-peptigate-outputs.snakefile`](./analyze-peptigate-outputs.snakefile): Ran on an AWS EC2 instance type `g4dn.2xlarge` running AMI Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 20.04) 20240122 (AMI ID ami-07eb000b3340966b0). Note the tool AutoPeptideML runs on a GPU.
+### Peptides that are similar to known peptides with antipruritic activity
+
+See [this notebook](./notebooks/20240404-antipruritic-peptides.ipynb) for more information.
+
+There are very few peptides with evidence of anti-pruritic effects so we could not create a machine learning model to identify this bioactivity.
+Instead, we BLASTp’d our peptide predictions against a database of protein sequences for five peptides with evidence of anti-pruritic activity: calcitonin gene-related peptide, dynorphin, tachykinin-4, votucalis, ziconotide. 
+
+We identified 65 peptides (2 cleavage, 63 sORF) from 13 species that had hits to anti-pruritic peptides, the majority of which matched calcitonin gene-related peptide. 
+About 70% of these sequences had hits against the Human Peptide Atlas, indicating that they might have homology (and shared function) with human peptides.
+(Note we assume this is so high because we used BLAST to detect sequences of interest in the first place).
+We again clustered all predicted peptides at 80% sequence identity and joined this information to our anti-pruritic peptide predictions; in total, the 65 peptides belonged to 55 clusters, suggesting that we recovered largely independent sequences.
+
+| Cluster contains at least this many peptides | Number of anti-pruritic peptides | Number of clusters (representative peptides) |
+| --- | --- | --- |
+| 2 | 22 | 12 |
+| 3 | 15 | 6 |
+| 4 | 6 | 3 |
+| 5 | 1 | 1 |
+| 6 | 0 | 0 |
 
 ## Contributing
 
