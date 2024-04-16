@@ -1,6 +1,6 @@
 [project]
-name = "TODO: Tool name"
-description = "TODO: Tool description"
+name = "Arcadia-Science/2024-tick-sg-peptides-tsa"
+description = "Analysis of tick salivary gland transcriptomes with peptigate for peptide discovery"
 version = "0.0.0"
 readme = "README.md"
 requires-python = ">=3.9"
