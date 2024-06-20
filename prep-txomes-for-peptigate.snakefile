@@ -5,7 +5,7 @@ metadata = pd.read_csv("inputs/tick_sg_transcriptomes_tsa.csv")
 metadata = metadata.set_index("tsa_accession", drop=False)
 TSA_ACCESSIONS = metadata["tsa_accession"].unique().tolist()
 # Note that this file variable is important as it is used to create the config file.
-FILETYPES = ["fasta_cds_aa", "fasta_cds_na", "fasta"]
+FILETYPES = ["fasta", "fasta_cds_aa", "fasta_cds_na"]
 
 
 rule all:
@@ -73,37 +73,20 @@ rule predict_proteins_with_transdecoder:
         mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.cds {output.fasta_cds_na}
         """
 
-
-rule touch_empty_file:
-    """
-    peptigate takes four input files:
-        * coding sequences as amino acid
-        * coding sequences as nucleotide
-        * contigs
-        * short contigs that didn't make it into the final assembly
-    The TSA transcriptomes don't have separate short contigs.
-    This rule generates an empty file to use as a place holder for that input file.
-    """
-    output:
-        touch("input_data/tsa_tick_sg_transcriptomes/{tsa_accession}/{tsa_accession}_empty.fa"),
-
-
 rule create_peptigate_config:
     input:
         tsa=expand(
             "input_data/tsa_tick_sg_transcriptomes/{{tsa_accession}}/{{tsa_accession}}_{filetype}.fa",
             filetype=FILETYPES,
         ),
-        empty="input_data/tsa_tick_sg_transcriptomes/{tsa_accession}/{tsa_accession}_empty.fa",
     output:
         config="input_configs/tsa_tick_sg_transcriptomes/{tsa_accession}_config.yml",
     shell:
         """
         python scripts/create_peptigate_config.py \
             --tsa_accession {wildcards.tsa_accession} \
-            --fasta_cds_aa {input.tsa[0]} \
-            --fasta_cds_na {input.tsa[1]} \
-            --empty {input.empty} \
-            --fasta {input.tsa[2]} \
+            --fasta {input.tsa[0]} \
+            --fasta_cds_aa {input.tsa[1]} \
+            --fasta_cds_na {input.tsa[2]} \
             --output {output.config}
         """
