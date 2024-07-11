@@ -31,7 +31,7 @@ snakemake -s prep-txomes-for-peptigate.snakefile --software-deployment-method co
 Then, supply this processed data and config files to run peptigate.
 The peptigate pipeline predicts peptides (sORF and cleavage) from transcriptome assemblies.
 We run this as a separate step because peptigate is its own Snakemake workflow in a GitHub repository and is not currently installable.
-We ran peptigate from the commit fda020929bbe53b30be3fbe27722b9356ea12635.
+We ran peptigate from the commit [148823239aad41a8f03da37f5499b00c8a79de40](https://github.com/Arcadia-Science/peptigate/commit/148823239aad41a8f03da37f5499b00c8a79de40).
 We cloned the repository, copied our config and input data files to the repo folder, and ran peptigate with this for loop:
 
 ```{bash}
