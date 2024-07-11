@@ -73,6 +73,7 @@ rule predict_proteins_with_transdecoder:
         mv {params.tmp_outdir}/{wildcards.tsa_accession}_fasta.fa.transdecoder.cds {output.fasta_cds_na}
         """
 
+
 rule create_peptigate_config:
     input:
         tsa=expand(
