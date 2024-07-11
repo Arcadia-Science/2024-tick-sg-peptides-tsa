@@ -69,15 +69,15 @@ As documented above, the analysis proceeds in three parts, beginning with data a
 
 ### Description of the folder structure
 
-* envs: Contains conda environment yaml files used by snakemake and to run the snakemake pipelines and notebooks.
-* inputs: Contains input files for the analysis as well as models for tools used in the repository.
-* notebooks: Contains jupyter notebooks that analyze the predicted peptides.
-* scripts: Scripts executed by the snakemake pipelines.
+* envs/: Contains conda environment yaml files used by snakemake and to run the snakemake pipelines and notebooks.
+* inputs/: Contains input files for the analysis as well as models for tools used in the repository.
+* notebooks/: Contains jupyter notebooks that analyze the predicted peptides.
+* scripts/: Scripts executed by the snakemake pipelines.
 * LICENSE: Details re-use constraints.
 * README.md: Documents the project and provides run instructions.
 * `analyze-peptigate-outputs.snakefile`: Documents the steps taken to analyze (annotate and compare) the peptide sequences predicted by peptigate.
 * `prep-txomes-for-peptigate.snakefile`: Documents the steps taken to prepare the TSA transcriptomes for peptigate.
-* .github, .vscode, .gitignore, .pre-commit-config.yaml, Makefile, pyproject.toml: Snakemake template files that control the developer environment of the repository. See the [Arcadia-Science/snakemake-template](https://github.com/Arcadia-Science/snakemake-template) for more details.
+* .github/, .vscode/, .gitignore, .pre-commit-config.yaml, Makefile, pyproject.toml: Snakemake template files that control the developer environment of the repository. See the [Arcadia-Science/snakemake-template](https://github.com/Arcadia-Science/snakemake-template) for more details.
 
 ### Compute Specifications
 
@@ -123,51 +123,28 @@ These decisions are documented in docstrings in the Snakefile and executed with 
 The results covered here are documented in greater detail in the analysis notebooks in the [notebooks](./notebooks) folder.
 
 Tick salivary gland transcriptomes contain thousands of predicted peptides, many of which have predicted anti-inflammatory or anti-pruritic bioactivity.
-We predicted peptide sequences from 28 publicly available tick salivary gland transcriptomes as well as the *A. americanum* (whole body, midgut, and salivary gland) transcriptome assembled in a [previous pilot](https://github.com/Arcadia-Science/2023-amblyomma-americanum-txome-assembly/).
-In total, peptigate predicted 224,433 peptides (17,468 cleavage, 206,965 sORF) from 18 tick species from the genera *Amblyomma*, *Hyalomma*, *Ixodes*, *Ornithodoros*, and *Rhipicephalus*.
+We predicted peptide sequences from 29 publicly available tick salivary gland transcriptomes as well as the *A. americanum* (whole body, midgut, and salivary gland) transcriptome assembled in a [previous pilot](https://github.com/Arcadia-Science/2023-amblyomma-americanum-txome-assembly/).
+In total, peptigate predicted 226,538 peptides (17,928 cleavage, 208,610 sORF) from 19 tick species from the genera *Amblyomma*, *Hyalomma*, *Ixodes*, *Ornithodoros*, and *Rhipicephalus*.
 
 ### Peptides with predicted anti-inflammatory bioactivity
 
 See [this notebook](./notebooks/20240404-antiinflammatory-peptides.ipynb) for more information.
-We predicted that 8,735 peptides (2,268 cleavage, 6467 sORF) had anti-inflammatory bioactivity (see [this issue](https://github.com/Arcadia-Science/2024-tick-sg-peptides-tsa/issues/2) for how we predicted anti-inflammatory bioactivity). The machine learning model we used had a 71% accuracy rate. 
-
-We struggled with paring down this list of peptides to hone in on those worth experimentally validating.
-We decided to move forward with peptides that were predicted in multiple transcriptomes.
-We assume that peptides that are in multiple transcriptomes contain some signature of evolution that supports their biological importance.
-We clustered all predicted peptides at 80% sequence identity and retained anti-inflammatory peptides that were in clusters that contained at least 2 sequences.
-This led to 830 peptides in 630 different clusters (759 cleavage, 71 sORF from 18 species). See the table below for how the number of peptides and clusters changes by increasing the number of times a peptide has to be observed for it to be retained
-
-| Cluster contains at least this many peptides | Number of anti-inflammatory peptides | Number of clusters (representative peptides) |
-| --- | --- | --- |
-| 2 | 830 | 630 |
-| 3 | 485 | 318 |
-| 4 | 333 | 198 |
-| 5 | 263 | 146 |
-| 6 | 228 | 115 |
-| 7 | 202 | 96 |
-| 8 | 165 | 78 |
-| 9 | 142 | 66 |
-| 10 | 125 | 56 |
+We predicted that 5,142 distinct peptide sequences (2,320 cleavage, 3,822 sORF) had anti-inflammatory bioactivity (see [this issue](https://github.com/Arcadia-Science/2024-tick-sg-peptides-tsa/issues/2) for how we predicted anti-inflammatory bioactivity).
+The machine learning model we used had a 71% accuracy rate.
+Given this low accuracy rate and the high number of predictions, we struggled with paring down this list of peptides to hone in on those worth experimentally validating from this data alone.
 
 ### Peptides that are similar to known peptides with antipruritic activity
 
 See [this notebook](./notebooks/20240404-antipruritic-peptides.ipynb) for more information.
 
 There are very few peptides with evidence of anti-pruritic effects so we could not create a machine learning model to identify this bioactivity.
-Instead, we BLASTp’d our peptide predictions against a database of protein sequences for five peptides with evidence of anti-pruritic activity: calcitonin gene-related peptide, dynorphin, tachykinin-4, votucalis, ziconotide. 
+Instead, we BLASTp’d our peptide predictions against a database of protein sequences for four peptides with evidence of anti-pruritic activity: calcitonin gene-related peptide, dynorphin, tachykinin-4, and ziconotide.
+We also BLASTp'd against votuclais, a small tick protein that sequesters histamine; votucalis is not a peptide, as it is greater than 100 amino acids. 
 
-We identified 65 peptides (2 cleavage, 63 sORF) from 13 species that had hits to anti-pruritic peptides, the majority of which matched calcitonin gene-related peptide. 
+We identified 106 peptides (2 cleavage, 104 sORF) from 16 species that had hits to anti-pruritic peptides, the majority of which matched calcitonin gene-related peptide. 
 About 70% of these sequences had hits against the Human Peptide Atlas, indicating that they might have homology (and shared function) with human peptides.
 (Note we assume this is so high because we used BLAST to detect sequences of interest in the first place).
-We again clustered all predicted peptides at 80% sequence identity and joined this information to our anti-pruritic peptide predictions; in total, the 65 peptides belonged to 55 clusters, suggesting that we recovered largely independent sequences.
-
-| Cluster contains at least this many peptides | Number of anti-pruritic peptides | Number of clusters (representative peptides) |
-| --- | --- | --- |
-| 2 | 22 | 12 |
-| 3 | 15 | 6 |
-| 4 | 6 | 3 |
-| 5 | 1 | 1 |
-| 6 | 0 | 0 |
+We again clustered all predicted peptides at 80% sequence identity and joined this information to our anti-pruritic peptide predictions; in total, the 106 peptides belonged to 92 clusters, suggesting that we recovered largely independent sequences.
 
 ## Contributing
 
