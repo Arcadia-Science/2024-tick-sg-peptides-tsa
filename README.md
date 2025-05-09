@@ -6,6 +6,7 @@
 ## Purpose
 
 This repository documents peptide discovery in tick salivary gland transcriptomes on the [TSA](https://www.ncbi.nlm.nih.gov/genbank/tsa/).
+This repository is associated with the pub, ["Predicting peptides from tick salivary glands that suppress host detection."](https://doi.org/https://doi.org/10.57844/arcadia-gfhy-d2f3)
 
 ## Installation, Setup, and Running the Pipeline
 
